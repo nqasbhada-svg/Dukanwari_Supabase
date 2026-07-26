@@ -6,9 +6,8 @@ let centralClient: SupabaseClient | null = null;
 export function getCentralSupabaseClient(): SupabaseClient | null {
   if (centralClient) return centralClient;
 
-  const meta = import.meta as any;
-  const url = meta.env?.VITE_CENTRAL_SUPABASE_URL;
-  const key = meta.env?.VITE_CENTRAL_SUPABASE_ANON_KEY;
+  const url = 'https://defiwkwtbcphlppyccma.supabase.co';
+  const key = 'sb_publishable_Z9OcNUtktEi5wFcpRaLAqw_K8ZjmeGL';
 
   if (url && key) {
     centralClient = createClient(url, key);
