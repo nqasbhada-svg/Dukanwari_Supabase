@@ -580,24 +580,29 @@ export default function App() {
       });
       if (error) {
         console.error('Supabase Auth Signup Error:', error);
+        alert(isMr ? `नोंदणी अयशस्वी: ${error.message}` : `Registration failed: ${error.message}`);
+        return;
       }
+    } else {
+      alert(isMr ? 'सिस्टम त्रुटी. कृपया नंतर पुन्हा प्रयत्न करा.' : 'System error. Please try again later.');
+      return;
     }
 
-    // Hash password securely using bcryptjs
-    const securedReg: ShopRegistration = {
+    // Do not save the password inside the database data
+    const safeReg: ShopRegistration = {
       ...newReg,
       loginInfo: {
         ...newReg.loginInfo,
-        password: hashPassword(newReg.loginInfo.password)
+        password: ''
       }
     };
 
-    const updated = [securedReg, ...registrations];
+    const updated = [safeReg, ...registrations];
     setRegistrations(updated);
     
     // Centralized Supabase Sync
     try {
-      await pushShopToCentralSupabase(securedReg);
+      await pushShopToCentralSupabase(safeReg);
     } catch (error) {
       console.error('Failed to push to central supabase:', error);
     }
