@@ -1,0 +1,10 @@
+{
+  "name": "Remix: Vastraa ERP Dukanwari",
+  "description": "An advanced, dual-language ERP, POS, inventory, billing, and stock analytics suite for modern cloth merchants.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
