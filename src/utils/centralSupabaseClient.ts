@@ -6,8 +6,9 @@ let centralClient: SupabaseClient | null = null;
 export function getCentralSupabaseClient(): SupabaseClient | null {
   if (centralClient) return centralClient;
 
-  const url = import.meta.env.VITE_CENTRAL_SUPABASE_URL;
-  const key = import.meta.env.VITE_CENTRAL_SUPABASE_ANON_KEY;
+  const meta = import.meta as any;
+  const url = meta.env?.VITE_CENTRAL_SUPABASE_URL;
+  const key = meta.env?.VITE_CENTRAL_SUPABASE_ANON_KEY;
 
   if (url && key) {
     centralClient = createClient(url, key);

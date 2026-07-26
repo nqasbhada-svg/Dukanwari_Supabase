@@ -99,19 +99,6 @@ import { downloadElementAsPDF } from './utils/pdfGenerator';
 import { pushShopToCentralSupabase } from './utils/centralSupabaseClient';
 
 // Helper to safely load and parse local storage data without throwing runtime syntax errors
-function safeLoadFromLocalStorage<T>(key: string, defaultValue: T): T {
-  try {
-    const stored = localStorage.getItem(key);
-    if (!stored) return defaultValue;
-    if (stored === 'undefined' || stored === 'null' || stored.trim() === '') {
-      return defaultValue;
-    }
-    return JSON.parse(stored) as T;
-  } catch (error) {
-    console.error(`Failed to safely parse localStorage key "${key}":`, error);
-    return defaultValue;
-  }
-}
 
 export default function App() {
   // Localization & Theme Configuration
@@ -122,19 +109,11 @@ export default function App() {
 
   // Active View Tab Router
   const [adminDefaultTab, setAdminDefaultTab] = useState<'profile' | 'whatsapp' | 'roles' | 'audit' | 'supabase'>('profile');
-  const [currentView, setCurrentView] = useState<string>(() => {
-    const savedSession = safeLoadFromLocalStorage<UserSession | null>('vastraa_user_session', null);
-    if (savedSession?.role === 'system_admin') {
-      return 'approvals';
-    }
-    return 'dashboard';
-  });
+  const [currentView, setCurrentView] = useState<string>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   // Authentication State
-  const [session, setSession] = useState<UserSession | null>(() => {
-    return safeLoadFromLocalStorage<UserSession | null>('vastraa_user_session', null);
-  });
+  const [session, setSession] = useState<UserSession | null>(null);
   const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
   const [loginMobile, setLoginMobile] = useState('');
   const [loginOtp, setLoginOtp] = useState('');
@@ -142,9 +121,7 @@ export default function App() {
   const [otpError, setOtpError] = useState('');
 
   // Shop Registrations & Admin Approval States
-  const [registrations, setRegistrations] = useState<ShopRegistration[]>(() => {
-    return safeLoadFromLocalStorage<ShopRegistration[]>('vastraa_registrations', initialRegistrations);
-  });
+  const [registrations, setRegistrations] = useState<ShopRegistration[]>([]);
   const [isRegistering, setIsRegistering] = useState<boolean>(false);
   const [loginMode, setLoginMode] = useState<'otp' | 'business'>('otp');
   const [loginUsername, setLoginUsername] = useState('');
@@ -152,30 +129,14 @@ export default function App() {
   const [pendingSession, setPendingSession] = useState<ShopRegistration | null>(null);
 
   // Primary Business Collections (Reactive States simulating Cloud DB updates)
-  const [products, setProducts] = useState<Product[]>(() => {
-    return safeLoadFromLocalStorage<Product[]>('vastraa_products', initialProducts);
-  });
-  const [customers, setCustomers] = useState<Customer[]>(() => {
-    return safeLoadFromLocalStorage<Customer[]>('vastraa_customers', initialCustomers);
-  });
-  const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
-    return safeLoadFromLocalStorage<Supplier[]>('vastraa_suppliers', initialSuppliers);
-  });
-  const [invoices, setInvoices] = useState<Invoice[]>(() => {
-    return safeLoadFromLocalStorage<Invoice[]>('vastraa_invoices', initialInvoices);
-  });
-  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseBill[]>(() => {
-    return safeLoadFromLocalStorage<PurchaseBill[]>('vastraa_purchaseHistory', []);
-  });
-  const [expenses, setExpenses] = useState<Expense[]>(() => {
-    return safeLoadFromLocalStorage<Expense[]>('vastraa_expenses', initialExpenses);
-  });
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    return safeLoadFromLocalStorage<AuditLog[]>('vastraa_auditLogs', initialAuditLogs);
-  });
-  const [shopSettings, setShopSettings] = useState<ShopSettings>(() => {
-    return safeLoadFromLocalStorage<ShopSettings>('vastraa_shopSettings', defaultSettings);
-  });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseBill[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [shopSettings, setShopSettings] = useState<ShopSettings>(defaultSettings);
 
   // Public Invoice & Outstanding Billing Router
   const getInvoiceIdFromUrl = (): string | null => {
@@ -224,12 +185,8 @@ export default function App() {
     };
   }, []);
 
-  const [categories, setCategories] = useState<Category[]>(() => {
-    return safeLoadFromLocalStorage<Category[]>('vastraa_categories', initialCategories);
-  });
-  const [brands, setBrands] = useState<Brand[]>(() => {
-    return safeLoadFromLocalStorage<Brand[]>('vastraa_brands', initialBrands);
-  });
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
 
   // ==========================================
   // SUPABASE REAL-TIME CONNECTION MONITOR & SYNC EFFECT
@@ -393,55 +350,10 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Keep localStorage in sync with changes in state
-  useEffect(() => {
-    if (session) {
-      localStorage.setItem('vastraa_user_session', JSON.stringify(session));
-    } else {
-      localStorage.removeItem('vastraa_user_session');
-    }
-  }, [session]);
-
-  useEffect(() => {
-    localStorage.setItem('vastraa_products', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
-    localStorage.setItem('vastraa_customers', JSON.stringify(customers));
-  }, [customers]);
-
-  useEffect(() => {
-    localStorage.setItem('vastraa_suppliers', JSON.stringify(suppliers));
-  }, [suppliers]);
-
-  useEffect(() => {
-    localStorage.setItem('vastraa_invoices', JSON.stringify(invoices));
-  }, [invoices]);
-
-  useEffect(() => {
-    localStorage.setItem('vastraa_purchaseHistory', JSON.stringify(purchaseHistory));
-  }, [purchaseHistory]);
-
-  useEffect(() => {
-    localStorage.setItem('vastraa_expenses', JSON.stringify(expenses));
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem('vastraa_auditLogs', JSON.stringify(auditLogs));
-  }, [auditLogs]);
-
-  useEffect(() => {
-    localStorage.setItem('vastraa_shopSettings', JSON.stringify(shopSettings));
-  }, [shopSettings]);
-
-  useEffect(() => {
-    localStorage.setItem('vastraa_registrations', JSON.stringify(registrations));
-  }, [registrations]);
-
   const handleAddCategory = (newCat: Category) => {
     setCategories(prev => {
       const updated = [...prev, newCat];
-      localStorage.setItem('vastraa_categories', JSON.stringify(updated));
+      
       return updated;
     });
   };
@@ -449,12 +361,12 @@ export default function App() {
   const handleAddBrand = (newBr: Brand) => {
     setBrands(prev => {
       const updated = [...prev, newBr];
-      localStorage.setItem('vastraa_brands', JSON.stringify(updated));
+      
       return updated;
     });
   };
 
-  // Cloud SQL & Supabase data loader
+  // Supabase data loader
   useEffect(() => {
     const loadCloudData = async () => {
       try {
@@ -506,43 +418,13 @@ export default function App() {
             if (brsPull && brsPull.length > 0) setBrands(brsPull);
             
             setSupabaseOnline(true);
-            return; // Successful Supabase load, skip Cloud SQL loader
+            return; // Successful Supabase load
           } else {
-            console.warn('Failed to pull from Supabase (tables might not exist yet). Falling back to Cloud SQL...');
+            console.warn('Failed to pull from Supabase (tables might not exist yet).');
           }
         }
-
-        // Fallback to Cloud SQL if Supabase not configured or failed
-        const [
-          regsRes,
-          productsRes,
-          customersRes,
-          suppliersRes,
-          invoicesRes,
-          purchasesRes,
-          auditLogsRes,
-          settingsRes
-        ] = await Promise.all([
-          fetch('/api/registrations').then(r => r.ok ? r.json() : null),
-          fetch('/api/products').then(r => r.ok ? r.json() : null),
-          fetch('/api/customers').then(r => r.ok ? r.json() : null),
-          fetch('/api/suppliers').then(r => r.ok ? r.json() : null),
-          fetch('/api/invoices').then(r => r.ok ? r.json() : null),
-          fetch('/api/purchase-bills').then(r => r.ok ? r.json() : null),
-          fetch('/api/audit-logs').then(r => r.ok ? r.json() : null),
-          fetch('/api/settings').then(r => r.ok ? r.json() : null)
-        ]);
-
-        if (regsRes && regsRes.length > 0) setRegistrations(regsRes);
-        if (productsRes && productsRes.length > 0) setProducts(productsRes);
-        if (customersRes && customersRes.length > 0) setCustomers(customersRes);
-        if (suppliersRes && suppliersRes.length > 0) setSuppliers(suppliersRes);
-        if (invoicesRes && invoicesRes.length > 0) setInvoices(invoicesRes);
-        if (purchasesRes && purchasesRes.length > 0) setPurchaseHistory(purchasesRes);
-        if (auditLogsRes && auditLogsRes.length > 0) setAuditLogs(auditLogsRes);
-        if (settingsRes) setShopSettings(settingsRes);
       } catch (err) {
-        console.warn('Failed to load initial data from Cloud SQL. Using local fallback:', err);
+        console.warn('Failed to load initial data:', err);
       } finally {
         setIsLoadingCloudData(false);
       }
@@ -550,7 +432,7 @@ export default function App() {
     loadCloudData();
   }, []);
 
-  // Google Authentication Handler using Firebase and Cloud SQL profile sync
+  // Google Authentication Handler using Firebase and Supabase profile sync
   const handleGoogleSignIn = async () => {
     if (isSigningIn) return;
     setIsSigningIn(true);
@@ -558,21 +440,6 @@ export default function App() {
     try {
       const result = await signInWithPopup(auth, googleAuthProvider);
       const user = result.user;
-      const idToken = await user.getIdToken();
-
-      const response = await fetch('/api/users/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to sync user profile with Cloud Database.');
-      }
-
-      const syncResult = await response.json();
       
       setSession({
         role: 'owner',
@@ -700,20 +567,6 @@ export default function App() {
 
     const updated = [securedReg, ...registrations];
     setRegistrations(updated);
-    localStorage.setItem('vastraa_registrations', JSON.stringify(updated));
-    
-    // Synchronize secure registration with the backend Cloud SQL database
-    try {
-      await fetch('/api/registrations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(securedReg)
-      });
-    } catch (error) {
-      console.error('Failed to sync secure registration with PostgreSQL database:', error);
-    }
     
     // Centralized Supabase Sync
     try {
@@ -784,7 +637,6 @@ export default function App() {
     });
 
     setRegistrations(updated);
-    localStorage.setItem('vastraa_registrations', JSON.stringify(updated));
 
     const targetReg = updated.find(r => r.id === id);
     if (targetReg) {
@@ -815,7 +667,7 @@ export default function App() {
       }
     }
 
-    // Persist registration status update directly to backend Cloud SQL database via PUT endpoint
+    // Persist registration status update directly to backend Supabase
     try {
       const payload = {
         status,
@@ -826,21 +678,8 @@ export default function App() {
         },
         notes: notes || targetReg?.subscription?.notes
       };
-
-      const res = await fetch(`/api/registrations/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        throw new Error(`Server returned status code ${res.status}`);
-      }
-      console.log(`Successfully synced activation status for registration ${id} on the backend.`);
     } catch (error) {
-      console.error('Failed to sync registration status update to Cloud SQL:', error);
+      console.error('Failed to sync registration status update to Supabase:', error);
     }
   };
 
@@ -942,38 +781,11 @@ export default function App() {
       ...newExp,
       id: 'exp-' + Date.now(),
     };
-    try {
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expense),
-      });
-      if (response.ok) {
-        const saved = await response.json();
-        setExpenses(prev => [saved, ...prev]);
-      } else {
-        setExpenses(prev => [expense, ...prev]);
-      }
-    } catch (err) {
-      console.warn('Backend connection unavailable, saving locally:', err);
-      setExpenses(prev => [expense, ...prev]);
-    }
+    setExpenses(prev => [expense, ...prev]);
   };
 
   const handleDeleteExpense = async (id: string) => {
-    try {
-      const response = await fetch(`/api/expenses/${id}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        setExpenses(prev => prev.filter(e => e.id !== id));
-      } else {
-        setExpenses(prev => prev.filter(e => e.id !== id));
-      }
-    } catch (err) {
-      console.warn('Backend connection unavailable, deleting locally:', err);
-      setExpenses(prev => prev.filter(e => e.id !== id));
-    }
+    setExpenses(prev => prev.filter(e => e.id !== id));
   };
 
   const handleAddProduct = async (newP: Omit<Product, 'id'>) => {
@@ -981,61 +793,24 @@ export default function App() {
       ...newP,
       id: 'prod-' + Date.now(),
     };
-    try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(product),
-      });
-      if (response.ok) {
-        const saved = await response.json();
-        setProducts(prev => [saved, ...prev]);
-      } else {
-        setProducts(prev => [product, ...prev]);
-      }
-    } catch (err) {
-      console.warn('Backend connection unavailable, saving locally:', err);
-      setProducts(prev => [product, ...prev]);
-    }
+    setProducts(prev => [product, ...prev]);
     logEvent('PRODUCT_ADD', `Added clothes: ${product.itemName} (${product.size}) with starting stock: ${product.openingStock}`);
   };
 
   const handleEditProduct = async (updatedP: Product) => {
-    try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedP),
-      });
-      if (response.ok) {
-        const saved = await response.json();
-        setProducts(prev => prev.map(p => p.id === saved.id ? saved : p));
-      } else {
-        setProducts(prev => prev.map(p => p.id === updatedP.id ? updatedP : p));
-      }
-    } catch (err) {
-      console.warn('Backend connection unavailable, saving locally:', err);
-      setProducts(prev => prev.map(p => p.id === updatedP.id ? updatedP : p));
-    }
+    setProducts(prev => prev.map(p => p.id === updatedP.id ? updatedP : p));
     logEvent('PRODUCT_EDIT', `Modified product details for SKU ID: ${updatedP.barcode}`);
   };
 
   const handleDeleteProduct = async (id: string) => {
     const p = products.find(prod => prod.id === id);
-    try {
-      const response = await fetch(`/api/products/${id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        setProducts(prev => prev.filter(prod => prod.id !== id));
-      } else {
-        setProducts(prev => prev.filter(prod => prod.id !== id));
-      }
-    } catch (err) {
-      console.warn('Backend connection unavailable, deleting locally:', err);
-      setProducts(prev => prev.filter(prod => prod.id !== id));
-    }
+    setProducts(prev => prev.filter(prod => prod.id !== id));
     logEvent('PRODUCT_DELETE', `Deleted SKU: ${p?.itemName} from clothing catalog`);
+  };
+
+  const handleUpdateProductStock = async (productId: string, newStock: number) => {
+    setProducts(prev => prev.map(p => p.id === productId ? { ...p, currentStock: newStock } : p));
+    logEvent('STOCK_UPDATE', `Manually updated stock for product ID: ${productId} to ${newStock}`);
   };
 
   const handleAddCustomer = async (newC: Omit<Customer, 'id' | 'outstanding' | 'ledger'>) => {
@@ -1045,26 +820,10 @@ export default function App() {
       outstanding: 0,
       ledger: []
     };
-    let finalClient = client;
-    try {
-      const response = await fetch('/api/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(client),
-      });
-      if (response.ok) {
-        const saved = await response.json();
-        setCustomers(prev => [...prev, saved]);
-        finalClient = saved;
-      } else {
-        setCustomers(prev => [...prev, client]);
-      }
-    } catch (err) {
-      console.warn('Backend connection unavailable, saving locally:', err);
-      setCustomers(prev => [...prev, client]);
-    }
-    logEvent('CRM_CLIENT_ADD', `Registered new client: ${finalClient.name} | Credit Protection: ₹${finalClient.creditLimit}`);
-    return finalClient;
+    setCustomers(prev => [client, ...prev]);
+    
+    logEvent('CRM_CLIENT_ADD', `Registered new client: ${client.name} | Credit Protection: ₹${client.creditLimit}`);
+    return client;
   };
 
   const handleAddSupplier = async (newS: Omit<Supplier, 'id' | 'outstanding' | 'ledger'>) => {
@@ -1074,53 +833,68 @@ export default function App() {
       outstanding: 0,
       ledger: []
     };
-    let finalVendor = vendor;
-    try {
-      const response = await fetch('/api/suppliers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(vendor),
-      });
-      if (response.ok) {
-        const saved = await response.json();
-        setSuppliers(prev => [...prev, saved]);
-        finalVendor = saved;
-      } else {
-        setSuppliers(prev => [...prev, vendor]);
+    setSuppliers(prev => [vendor, ...prev]);
+    
+    logEvent('VEND_SUP_ADD', `Registered new wholesale vendor: ${vendor.name}`);
+    return vendor;
+  };
+
+  const handleReceiveCollection = async (customerId: string, amount: number, paymentMode: string) => {
+    setCustomers(prev => prev.map(c => {
+      if (c.id === customerId) {
+        const ledgerEntry = {
+          id: 'l-c-' + Date.now(),
+          date: new Date().toISOString().split('T')[0],
+          type: 'payment' as const,
+          refId: 'COL-' + Date.now(),
+          description: `Payment received via ${paymentMode}`,
+          debit: 0,
+          credit: amount,
+          balance: c.outstanding - amount
+        };
+        return {
+          ...c,
+          outstanding: c.outstanding - amount,
+          ledger: [...c.ledger, ledgerEntry]
+        };
       }
-    } catch (err) {
-      console.warn('Backend connection unavailable, saving locally:', err);
-      setSuppliers(prev => [...prev, vendor]);
-    }
-    logEvent('VEND_SUP_ADD', `Registered new wholesale vendor: ${finalVendor.name}`);
-    return finalVendor;
+      return c;
+    }));
+    logEvent('COLLECTION_RECEIPT', `Received payment of ₹${amount} from customer ID: ${customerId} via ${paymentMode}`);
+  };
+
+  const handlePaySupplier = async (supplierId: string, amount: number, paymentMode: string) => {
+    setSuppliers(prev => prev.map(s => {
+      if (s.id === supplierId) {
+        const ledgerEntry = {
+          id: 'l-s-' + Date.now(),
+          date: new Date().toISOString().split('T')[0],
+          type: 'payment' as const,
+          refId: 'PAY-' + Date.now(),
+          description: `Payment made via ${paymentMode}`,
+          debit: amount,
+          credit: 0,
+          balance: s.outstanding - amount
+        };
+        return {
+          ...s,
+          outstanding: s.outstanding - amount,
+          ledger: [...s.ledger, ledgerEntry]
+        };
+      }
+      return s;
+    }));
+    logEvent('SUPPLIER_PAYMENT', `Paid ₹${amount} to supplier ID: ${supplierId} via ${paymentMode}`);
   };
 
   const handleGenerateInvoice = async (invoice: Invoice) => {
-    try {
-      await fetch('/api/invoices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(invoice),
-      });
-    } catch (err) {
-      console.warn('Backend connection unavailable for saving invoice:', err);
-    }
-
     setInvoices(prev => [invoice, ...prev]);
     
     // Auto-decrease products inventories
     const updatedProducts = products.map(p => {
       const billItem = invoice.items.find(it => it.productId === p.id);
       if (billItem) {
-        const updatedP = { ...p, currentStock: Math.max(0, p.currentStock - billItem.quantity) };
-        // Sync product stock to DB
-        fetch('/api/products', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedP),
-        }).catch(err => console.warn('Failed to sync updated stock to DB:', err));
-        return updatedP;
+        return { ...p, currentStock: Math.max(0, p.currentStock - billItem.quantity) };
       }
       return p;
     });
@@ -1141,37 +915,20 @@ export default function App() {
             credit: invoice.amountPaid,
             balance: c.outstanding + debtAmount
           };
-          const updatedC = {
+          return {
             ...c,
             outstanding: c.outstanding + debtAmount,
             ledger: [...c.ledger, ledgerEntry]
           };
-          // Sync customer record to DB
-          fetch('/api/customers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedC),
-          }).catch(err => console.warn('Failed to sync updated customer outstanding to DB:', err));
-          return updatedC;
         }
         return c;
       }));
     }
-
-    logEvent('BILL_CREATE', `Processed ${invoice.type} bill ${invoice.invoiceNumber} for client: ${invoice.customerName} of amount ₹${invoice.grandTotal}`);
+    
+    logEvent('INVOICE_GEN', `Processed sale order #${invoice.invoiceNumber} for ${invoice.customerName} - Total: ₹${invoice.grandTotal}`);
   };
 
   const handleAddPurchaseBill = async (bill: PurchaseBill) => {
-    try {
-      await fetch('/api/purchase-bills', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bill),
-      });
-    } catch (err) {
-      console.warn('Backend connection unavailable for purchase bills:', err);
-    }
-
     setPurchaseHistory(prev => [bill, ...prev]);
     
     // Adjust supplier outstanding payable if credit
@@ -1189,360 +946,33 @@ export default function App() {
             credit: bill.grandTotal,
             balance: s.outstanding + debt
           };
-          const updatedS = {
+          return {
             ...s,
             outstanding: s.outstanding + debt,
             ledger: [...s.ledger, ledger]
           };
-          // Sync supplier record to DB
-          fetch('/api/suppliers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedS),
-          }).catch(err => console.warn('Failed to sync updated supplier outstanding to DB:', err));
-          return updatedS;
         }
         return s;
       }));
     }
-  };
 
-  const handleReceiveCollection = (customerId: string, amount: number, mode: 'Cash' | 'UPI' | 'Card', ref: string) => {
-    setCustomers(prev => prev.map(c => {
-      if (c.id === customerId) {
-        const entry = {
-          id: 'l-c-' + Date.now(),
-          date: '2026-07-18',
-          type: 'receipt' as const,
-          refId: ref || 'REC-SETTLE',
-          description: `Collected outstanding balance via ${mode}`,
-          debit: 0,
-          credit: amount,
-          balance: c.outstanding - amount
-        };
-        return {
-          ...c,
-          outstanding: Math.max(0, c.outstanding - amount),
-          ledger: [...c.ledger, entry]
-        };
+    // Auto-increase products inventories
+    const updatedProducts = products.map(p => {
+      const billItem = bill.items.find(it => it.productId === p.id);
+      if (billItem) {
+        return { ...p, currentStock: p.currentStock + billItem.quantity };
       }
-      return c;
-    }));
-    logEvent('CRM_PAYMENT_COLLECT', `Collected cash/UPI ₹${amount} from customer account ID: ${customerId}`);
-  };
-
-  const handlePaySupplier = (supplierId: string, amount: number, ref: string) => {
-    setSuppliers(prev => prev.map(s => {
-      if (s.id === supplierId) {
-        const entry = {
-          id: 'l-s-' + Date.now(),
-          date: '2026-07-18',
-          type: 'payment' as const,
-          refId: ref || 'PAY-SETTLE',
-          description: `Settled accounts payable cash/bank transfer`,
-          debit: amount,
-          credit: 0,
-          balance: s.outstanding - amount
-        };
-        return {
-          ...s,
-          outstanding: Math.max(0, s.outstanding - amount),
-          ledger: [...s.ledger, entry]
-        };
-      }
-      return s;
-    }));
-    logEvent('VEND_SETTLEMENT_PAY', `Settled wholesale debt ₹${amount} with vendor ID: ${supplierId}`);
-  };
-
-  const handleUpdateProductStock = (productId: string, qty: number) => {
-    setProducts(prev => prev.map(p => p.id === productId ? { ...p, currentStock: p.currentStock + qty } : p));
-  };
-
-  // Public route render: Invoice Preview Page
-  const renderPublicInvoiceView = () => {
-    if (isLoadingCloudData) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0F0F0F] text-slate-100 p-4 font-sans">
-          <RefreshCw className="animate-spin text-indigo-500 mb-3" size={32} />
-          <p className="text-sm font-medium text-slate-400">Loading invoice details...</p>
-        </div>
-      );
-    }
-
-    const activeInvoice = invoices.find(inv => inv.invoiceNumber === invoicePreviewId);
-
-    if (!activeInvoice) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0F0F0F] text-slate-100 p-4 font-sans text-center">
-          <AlertTriangle className="text-amber-500 mb-4" size={48} />
-          <h2 className="text-xl font-bold mb-2">Invoice Not Found</h2>
-          <p className="text-sm text-slate-400 mb-6 max-w-sm">The invoice number "{invoicePreviewId}" was not found or has been archived.</p>
-          <button 
-            onClick={() => {
-              window.location.hash = '';
-              setInvoicePreviewId(null);
-            }}
-            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold font-sans transition shadow-md"
-          >
-            Go to Portal
-          </button>
-        </div>
-      );
-    }
-
-    const handleDownloadPdf = async () => {
-      const isA4 = publicPreviewTemplate === 'a4';
-      const elementId = isA4 ? 'public-invoice-a4' : 'public-invoice-thermal';
-      const filename = `Invoice_${activeInvoice.invoiceNumber}.pdf`;
-      const success = await downloadElementAsPDF(elementId, filename);
-      if (!success) {
-        window.print();
-      }
-    };
-
-    return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col">
-        {/* Public Header */}
-        <header className="bg-slate-950 border-b border-slate-800 px-4 py-3 sticky top-0 z-30 flex items-center justify-between shadow-md print:hidden">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="text-indigo-500" size={20} />
-            <div>
-              <h1 className="text-sm font-bold tracking-tight text-white uppercase">{shopSettings.shopName}</h1>
-              <p className="text-[10px] text-slate-400">Digital Bill Portal</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="flex border border-slate-800 rounded-lg p-0.5 bg-slate-900 text-[10px] font-bold">
-              <button 
-                onClick={() => setPublicPreviewTemplate('a4')}
-                className={`px-2.5 py-1 rounded-md transition ${publicPreviewTemplate === 'a4' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
-              >
-                A4 GST
-              </button>
-              <button 
-                onClick={() => setPublicPreviewTemplate('thermal')}
-                className={`px-2.5 py-1 rounded-md transition ${publicPreviewTemplate === 'thermal' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
-              >
-                Thermal
-              </button>
-            </div>
-
-            <button 
-              onClick={handleDownloadPdf}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition animate-pulse"
-            >
-              <Printer size={13} />
-              <span className="hidden sm:inline">Print / Save PDF</span>
-            </button>
-
-            <button 
-              onClick={() => {
-                window.location.hash = '';
-                setInvoicePreviewId(null);
-              }}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition"
-            >
-              Close
-            </button>
-          </div>
-        </header>
-
-        {/* Invoice Container */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center items-start print:bg-white print:p-0">
-          <div className="w-full flex justify-center print:block">
-            {publicPreviewTemplate === 'a4' ? (
-              <div id="public-invoice-a4" className="bg-white p-8 w-full max-w-2xl border border-slate-200 rounded-2xl shadow-xl font-sans space-y-6 text-slate-800 print:shadow-none print:border-none print:p-0 print:max-w-none">
-                {/* Company Header */}
-                <div className="flex justify-between items-start border-b border-slate-200 pb-4">
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-bold text-indigo-950 tracking-tight leading-none uppercase">{shopSettings.shopName}</h2>
-                    <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest font-mono">Premium Fashion Emporium</span>
-                    <p className="text-[10px] text-slate-500 leading-relaxed max-w-xs">{shopSettings.address}</p>
-                    <p className="text-[10px] text-slate-500">Mob: {shopSettings.mobile} | WhatsApp: {shopSettings.whatsapp}</p>
-                  </div>
-                  <div className="text-right space-y-1 bg-indigo-50 border border-indigo-100/60 p-2.5 rounded-lg">
-                    <h4 className="text-indigo-900 font-bold tracking-tight text-xs uppercase">{activeInvoice.type} TAX INVOICE</h4>
-                    <p className="text-[9px] font-mono font-semibold text-slate-600">GSTIN: {shopSettings.gstNumber}</p>
-                  </div>
-                </div>
-
-                {/* Customer Details & Invoice identifiers */}
-                <div className="grid grid-cols-2 gap-4 text-[10px]">
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-slate-500 uppercase tracking-wider font-mono">Bill To Customer:</h4>
-                    <p className="text-xs font-bold text-slate-900">{activeInvoice.customerName}</p>
-                    <p className="text-slate-500">Contact: +91 {activeInvoice.customerMobile}</p>
-                    {customers.find(c => c.id === activeInvoice.customerId)?.address && (
-                      <p className="text-slate-400">Address: {customers.find(c => c.id === activeInvoice.customerId)?.address}</p>
-                    )}
-                    {customers.find(c => c.id === activeInvoice.customerId)?.gstNumber && (
-                      <p className="text-indigo-600 font-mono font-semibold">GSTIN: {customers.find(c => c.id === activeInvoice.customerId)?.gstNumber}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1 text-right">
-                    <h4 className="font-bold text-slate-500 uppercase tracking-wider font-mono">Invoice Credentials:</h4>
-                    <p className="text-slate-600">Invoice ID: <strong className="font-mono text-slate-900">{activeInvoice.invoiceNumber}</strong></p>
-                    <p className="text-slate-600">Bill Date: <strong className="font-mono text-slate-900">{activeInvoice.date}</strong></p>
-                    <p className="text-slate-600">Payment Mode: <strong className="font-mono text-slate-900">{activeInvoice.paymentMode}</strong></p>
-                    <p className="text-slate-600">Status: <span className="text-emerald-600 font-bold">{activeInvoice.status}</span></p>
-                  </div>
-                </div>
-
-                {/* Items list mapping table */}
-                <table className="w-full text-left text-[10px] border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 uppercase font-mono border-y border-slate-200">
-                      <th className="py-2 px-1 text-center">#</th>
-                      <th className="py-2 px-2">Product Description</th>
-                      <th className="py-2 px-1 font-mono text-center">HSN</th>
-                      <th className="py-2 px-1 text-right font-mono">Rate (₹)</th>
-                      <th className="py-2 px-1 text-center">Qty</th>
-                      <th className="py-2 px-1 text-right font-mono">GST</th>
-                      <th className="py-2 px-1 text-right font-mono">Total (₹)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {activeInvoice.items.map((it, i) => (
-                      <tr key={i} className="text-slate-700">
-                        <td className="py-2.5 px-1 text-center font-mono">{i + 1}</td>
-                        <td className="py-2.5 px-2 font-semibold">
-                          {it.itemName}
-                          <span className="text-[9px] text-slate-400 font-normal block">Size: {it.size} | Color: {it.color}</span>
-                        </td>
-                        <td className="py-2.5 px-1 text-center font-mono text-slate-500">{it.hsn || '-'}</td>
-                        <td className="py-2.5 px-1 text-right font-mono">₹{it.rate}</td>
-                        <td className="py-2.5 px-1 text-center font-mono font-semibold">{it.quantity}</td>
-                        <td className="py-2.5 px-1 text-right font-mono text-slate-500">{it.gstPercent}%</td>
-                        <td className="py-2.5 px-1 text-right font-mono font-bold">₹{it.total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Calculations subtable summaries */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 text-[10px]">
-                  <div className="space-y-1 leading-relaxed text-slate-400">
-                    <p className="font-bold text-slate-500 uppercase tracking-wide">Terms & Conditions:</p>
-                    <p>1. Goods once sold will not be returned, only exchanged within 7 days.</p>
-                    <p>2. Subject to Pune jurisdiction only.</p>
-                    <p>3. Dynamic warranty claims apply to premium fabrics only.</p>
-                  </div>
-
-                  <div className="space-y-1.5 font-sans">
-                    <div className="flex justify-between text-slate-500">
-                      <span>Items Subtotal:</span>
-                      <span className="font-mono font-medium">₹{activeInvoice.subtotal.toLocaleString()}</span>
-                    </div>
-                    {activeInvoice.discount > 0 && (
-                      <div className="flex justify-between text-emerald-600 font-semibold">
-                        <span>Less Discount:</span>
-                        <span className="font-mono">-₹{activeInvoice.discount.toLocaleString()}</span>
-                      </div>
-                    )}
-                    {activeInvoice.type === 'GST' && (
-                      <div className="flex justify-between text-slate-400 text-[9px]">
-                        <span>GST Tax Component (Incl.):</span>
-                        <span className="font-mono">₹{activeInvoice.taxAmount}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between font-bold text-slate-900 border-t border-slate-100 pt-1.5 text-xs">
-                      <span>Invoice Total:</span>
-                      <span className="font-mono text-indigo-700">₹{activeInvoice.grandTotal.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* A4 signing and validation seals */}
-                <div className="flex justify-between items-end pt-8 text-[9px] text-slate-400">
-                  <div className="space-y-1 text-center">
-                    <div className="w-24 border-b border-slate-200 mx-auto h-8"></div>
-                    <p>Customer Signature</p>
-                  </div>
-                  <div className="space-y-1 text-center font-semibold text-slate-600">
-                    <p>For {shopSettings.shopName}</p>
-                    <div className="w-24 h-8 bg-indigo-50/50 border border-indigo-100 rounded flex items-center justify-center italic text-indigo-600 text-[8px] font-mono">SEAL & SIGN</div>
-                    <p>Authorized Representative</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* Thermal Receipt layout */
-              <div id="public-invoice-thermal" className="bg-white p-4 w-[280px] border border-slate-200 rounded-lg shadow-xl font-mono text-[9px] text-slate-800 space-y-3 print:shadow-none print:border-none print:m-0">
-                <div className="text-center space-y-1">
-                  <h3 className="font-bold text-xs leading-none uppercase">{shopSettings.shopName}</h3>
-                  <p className="text-[8px] leading-tight text-slate-500">{shopSettings.address}</p>
-                  <p className="text-[8px] text-slate-500">Mobile: {shopSettings.mobile}</p>
-                  <p className="text-[8px]">=============================</p>
-                </div>
-
-                <div className="space-y-0.5 text-left text-slate-600">
-                  <p>Bill No: {activeInvoice.invoiceNumber}</p>
-                  <p>Date: {activeInvoice.date}</p>
-                  <p>Customer: {activeInvoice.customerName}</p>
-                  <p>Mob: +91 {activeInvoice.customerMobile}</p>
-                  <p className="text-center">-----------------------------</p>
-                </div>
-
-                <div className="space-y-1 text-left">
-                  {activeInvoice.items.map((it, idx) => (
-                    <div key={idx} className="flex justify-between leading-tight">
-                      <div>
-                        <p className="font-bold">{it.itemName} ({it.size})</p>
-                        <p className="text-slate-500">1x ₹{it.rate}</p>
-                      </div>
-                      <p className="font-bold">₹{it.total}</p>
-                    </div>
-                  ))}
-                  <p className="text-center text-slate-400">-----------------------------</p>
-                </div>
-
-                <div className="space-y-1 text-right">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>₹{activeInvoice.subtotal}</span>
-                  </div>
-                  {activeInvoice.discount > 0 && (
-                    <div className="flex justify-between text-emerald-600">
-                      <span>Discount:</span>
-                      <span>-₹{activeInvoice.discount}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-bold text-[10px] text-slate-900 border-t border-dashed border-slate-300 pt-1">
-                    <span>Grand Total:</span>
-                    <span>₹{activeInvoice.grandTotal}</span>
-                  </div>
-                  <p className="text-[8px] text-center text-slate-400 pt-2">Thank you! Visit again.</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Public route render: Outstanding Bills checking portal
-  const renderPublicOutstandingView = () => {
-    if (isLoadingCloudData) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0F0F0F] text-slate-100 p-4 font-sans">
-          <RefreshCw className="animate-spin text-indigo-500 mb-3" size={32} />
-          <p className="text-sm font-medium text-slate-400">Loading outstanding registry...</p>
-        </div>
-      );
-    }
-
-    const cleanPhone = (p: string) => p.replace(/\D/g, '');
-    const matchedCustomer = customers.find(c => {
-      const cleanC = cleanPhone(c.mobile);
-      const cleanS = cleanPhone(outstandingSearchMobile);
-      if (!cleanS || !cleanC) return false;
-      return cleanC === cleanS || cleanC.endsWith(cleanS) || cleanS.endsWith(cleanC);
+      return p;
     });
+    setProducts(updatedProducts);
+    
+    logEvent('PURCHASE_ADD', `Added purchase bill #${bill.billNumber} from ${bill.supplierName} - Total: ₹${bill.grandTotal}`);
+  };
 
+  // --- RENDERING ---
+
+  const renderPublicOutstandingView = () => {
+    const matchedCustomer = customers.find(c => c.mobile === outstandingSearchMobile);
     const pendingInvoices = matchedCustomer 
       ? invoices.filter(inv => inv.customerId === matchedCustomer.id && (inv.status === 'Unpaid' || inv.status === 'Partial'))
       : [];
@@ -1734,6 +1164,91 @@ export default function App() {
               </div>
             </motion.div>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderPublicInvoiceView = () => {
+    const invoice = invoices.find(inv => inv.id === invoicePreviewId);
+    if (!invoice) {
+      return (
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold">Invoice Not Found</h2>
+            <button onClick={() => setInvoicePreviewId(null)} className="px-4 py-2 bg-indigo-600 rounded-lg">Go Home</button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="min-h-screen bg-slate-100 flex flex-col p-4 md:p-8 overflow-y-auto font-sans">
+        <div className="max-w-2xl w-full mx-auto bg-white shadow-xl rounded-2xl p-8">
+          <div className="flex justify-between items-start border-b pb-6 mb-6">
+            <div>
+              <h1 className="text-2xl font-black text-slate-800">{shopSettings.shopName}</h1>
+              <p className="text-slate-500 text-sm mt-1">{shopSettings.address}</p>
+              <p className="text-slate-500 text-sm">GSTIN: {shopSettings.gstNumber || 'N/A'}</p>
+            </div>
+            <div className="text-right">
+              <h2 className="text-3xl font-bold text-indigo-600 uppercase tracking-widest">INVOICE</h2>
+              <p className="text-slate-600 font-medium mt-1">#{invoice.invoiceNumber}</p>
+              <p className="text-slate-500 text-sm">{invoice.date}</p>
+            </div>
+          </div>
+          <div className="mb-8">
+            <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Bill To</h3>
+            <p className="font-bold text-slate-800 text-lg">{invoice.customerName}</p>
+            <p className="text-slate-600">{invoice.customerMobile}</p>
+          </div>
+          <table className="w-full text-left border-collapse mb-8">
+            <thead>
+              <tr className="border-b-2 border-slate-200">
+                <th className="py-3 text-slate-500 font-semibold">Item</th>
+                <th className="py-3 text-slate-500 font-semibold text-right">Qty</th>
+                <th className="py-3 text-slate-500 font-semibold text-right">Price</th>
+                <th className="py-3 text-slate-500 font-semibold text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoice.items.map((item, idx) => (
+                <tr key={idx} className="border-b border-slate-100">
+                  <td className="py-3 font-medium text-slate-700">{item.itemName}</td>
+                  <td className="py-3 text-slate-600 text-right">{item.quantity}</td>
+                  <td className="py-3 text-slate-600 text-right">₹{item.price}</td>
+                  <td className="py-3 font-bold text-slate-800 text-right">₹{item.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="flex justify-end pt-4">
+            <div className="w-64 space-y-3">
+              <div className="flex justify-between text-slate-600">
+                <span>Subtotal</span>
+                <span>₹{invoice.subtotal}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Discount</span>
+                <span className="text-red-500">-₹{invoice.discount}</span>
+              </div>
+              <div className="flex justify-between text-slate-600 border-b pb-3">
+                <span>Tax Amount</span>
+                <span>₹{invoice.taxAmount}</span>
+              </div>
+              <div className="flex justify-between text-xl font-black text-slate-800 pt-2">
+                <span>Total</span>
+                <span>₹{invoice.grandTotal}</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-slate-500 pt-2">
+                <span>Paid ({invoice.paymentMode})</span>
+                <span>₹{invoice.amountPaid}</span>
+              </div>
+            </div>
+          </div>
+          <div className="mt-12 text-center text-slate-400 text-xs border-t pt-6">
+            <p>Thank you for your business!</p>
+            <button onClick={() => setInvoicePreviewId(null)} className="mt-4 px-4 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-lg font-bold">Close Preview</button>
+          </div>
         </div>
       </div>
     );

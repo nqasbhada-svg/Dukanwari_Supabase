@@ -1,17 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Load Supabase credentials from localStorage or environment variables
+// In-memory store for Supabase credentials (avoids local storage per user request)
+let currentUrl: string = '';
+let currentAnonKey: string = '';
+
 export function getSupabaseConfig() {
-  if (typeof window === 'undefined') {
-    return { url: '', anonKey: '', isConfigured: false };
-  }
-
-  const storedUrl = localStorage.getItem('vastraa_supabase_url');
-  const storedKey = localStorage.getItem('vastraa_supabase_anon_key');
-
   const meta = import.meta as any;
-  const url = storedUrl || (meta.env && meta.env.VITE_SUPABASE_URL) || '';
-  const anonKey = storedKey || (meta.env && meta.env.VITE_SUPABASE_ANON_KEY) || '';
+  const envUrl = (meta.env && meta.env.VITE_SUPABASE_URL) || '';
+  const envKey = (meta.env && meta.env.VITE_SUPABASE_ANON_KEY) || '';
+
+  const url = currentUrl || envUrl;
+  const anonKey = currentAnonKey || envKey;
 
   return {
     url,
@@ -21,17 +20,16 @@ export function getSupabaseConfig() {
 }
 
 export function saveSupabaseConfig(url: string, anonKey: string) {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('vastraa_supabase_url', url.trim());
-    localStorage.setItem('vastraa_supabase_anon_key', anonKey.trim());
-  }
+  currentUrl = url.trim();
+  currentAnonKey = anonKey.trim();
+  // Reset client instance when config changes
+  supabaseInstance = null;
 }
 
 export function clearSupabaseConfig() {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('vastraa_supabase_url');
-    localStorage.removeItem('vastraa_supabase_anon_key');
-  }
+  currentUrl = '';
+  currentAnonKey = '';
+  supabaseInstance = null;
 }
 
 // Lazy initialization of Supabase client
