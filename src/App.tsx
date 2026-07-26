@@ -489,29 +489,35 @@ export default function App() {
     e.preventDefault();
     setOtpError('');
     
-    const trimmedEmail = loginEmail.toLowerCase().trim();
+    const rawEmail = loginEmail.trim();
+    const trimmedEmail = rawEmail.toLowerCase();
+    
     if (
-      (trimmedEmail === 'superadmin' || trimmedEmail === 'admin' || trimmedEmail === 'systemadmin') && 
-      (loginPassword === 'adminpassword' || loginPassword === 'admin123')
+      (trimmedEmail === 'superadmin' || trimmedEmail === 'admin' || trimmedEmail === 'systemadmin')
     ) {
-      // Successful System Admin login
-      setSession({
-        role: 'system_admin',
-        mobile: '9876543210',
-        name: 'System Admin (Platform Owner)',
-        permissions: ['APPROVE_SHOPS', 'MANAGE_SUBSCRIPTIONS']
-      });
-      setCurrentView('approvals');
-      setOtpError('');
-      setLoginEmail('');
-      setLoginPassword('');
-      return;
+      if (loginPassword === 'adminpassword' || loginPassword === 'admin123') {
+        // Successful System Admin login
+        setSession({
+          role: 'system_admin',
+          mobile: '9876543210',
+          name: 'System Admin (Platform Owner)',
+          permissions: ['APPROVE_SHOPS', 'MANAGE_SUBSCRIPTIONS']
+        });
+        setCurrentView('approvals');
+        setOtpError('');
+        setLoginEmail('');
+        setLoginPassword('');
+        return;
+      } else {
+        setOtpError(isMr ? 'चुकीचे पासवर्ड!' : 'Invalid admin password!');
+        return;
+      }
     }
 
     const centralClient = getCentralSupabaseClient();
     if (centralClient) {
       const { data, error } = await centralClient.auth.signInWithPassword({
-        email: trimmedEmail,
+        email: rawEmail,
         password: loginPassword,
       });
 
@@ -1452,12 +1458,12 @@ export default function App() {
                 <div className="space-y-1">
                   <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">{isMr ? 'ईमेल' : 'Email'}</label>
                   <input 
-                    type="text"
+                    type="email"
                     required
-                    placeholder={isMr ? "उदा. sanskriti_fashion" : "e.g. sanskriti_fashion"}
+                    placeholder={isMr ? "उदा. rahul@example.com" : "e.g. rahul@example.com"}
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl px-3 py-2 outline-none font-mono text-sm font-bold text-white tracking-wide"
+                    className="w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl px-3 py-2 outline-none font-sans text-sm font-bold text-white tracking-wide"
                   />
                 </div>
 
