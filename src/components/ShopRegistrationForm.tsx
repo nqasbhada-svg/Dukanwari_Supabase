@@ -59,7 +59,6 @@ export default function ShopRegistrationForm({ onBackToLogin, onSubmitRegistrati
   const [state, setState] = useState('');
   const [pincode, setPincode] = useState('');
   
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
@@ -107,10 +106,7 @@ export default function ShopRegistrationForm({ onBackToLogin, onSubmitRegistrati
       }
       if (!openingDate) newErrors.openingDate = isMr ? 'ओपनिंग तारीख आवश्यक आहे' : 'Shop opening date is required';
     } else if (currentStep === 2) {
-      if (!username.trim() || username.length < 4) {
-        newErrors.username = isMr ? 'युझरनेम किमान ४ अक्षरे असावे' : 'Username must be at least 4 characters';
-      }
-      if (!password || password.length < 6) {
+      if (!email.trim() || email.length < 4) {
         newErrors.password = isMr ? 'पासवर्ड किमान ६ अक्षरांचा असावा' : 'Password must be at least 6 characters';
       }
       if (password !== confirmPassword) {
@@ -157,7 +153,7 @@ export default function ShopRegistrationForm({ onBackToLogin, onSubmitRegistrati
       state,
       pincode,
       loginInfo: {
-        username,
+        email,
         password
       },
       shopDetails: {
@@ -595,19 +591,7 @@ export default function ShopRegistrationForm({ onBackToLogin, onSubmitRegistrati
                     <div className="space-y-2 bg-indigo-950/10 p-3 rounded-2xl border border-indigo-500/5">
                       <span className="text-[9px] uppercase tracking-wider text-indigo-400 font-bold block mb-1">
                         🔑 {isMr ? 'नवीन युझर तयार करा' : 'ADMIN LOGIN CREDENTIALS'}
-                      </span>
-                      
-                      <div className="space-y-1">
-                        <label className="text-[10px] uppercase text-slate-400 font-bold block">{isMr ? 'युझरनेम *' : 'Username *'}</label>
-                        <input 
-                          type="text"
-                          placeholder="e.g. rahul_boutique"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
-                          className={`w-full bg-slate-950/80 border ${errors.username ? 'border-rose-500' : 'border-slate-800'} focus:border-indigo-500 rounded-xl px-3 py-1.5 outline-none text-slate-100`}
-                        />
-                        {errors.username && <p className="text-rose-400 text-[10px]">{errors.username}</p>}
-                      </div>
+                        </span>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                         <div className="space-y-1">
@@ -846,7 +830,7 @@ export default function ShopRegistrationForm({ onBackToLogin, onSubmitRegistrati
                         <div><span className="text-slate-500">{isMr ? 'मालक:' : 'Owner:'}</span> <strong className="text-slate-200">{ownerName}</strong></div>
                         <div><span className="text-slate-500">{isMr ? 'मोबाईल:' : 'Mobile:'}</span> <strong className="text-slate-200 font-mono">{mobile}</strong></div>
                         <div><span className="text-slate-500">{isMr ? 'प्रकार:' : 'Type:'}</span> <strong className="text-slate-200">{shopType}</strong></div>
-                        <div><span className="text-slate-500">{isMr ? 'युझरनेम:' : 'Username:'}</span> <strong className="text-slate-200 font-mono">{username}</strong></div>
+                        <div><span className="text-slate-500">{isMr ? 'ईमेल:' : 'Email:'}</span> <strong className="text-slate-200 font-mono">{email}</strong></div>
                         <div><span className="text-slate-500">{isMr ? 'प्लॅन विनंती:' : 'Requested Plan:'}</span> <strong className="text-indigo-400 font-bold">{requestedSubscription}</strong></div>
                       </div>
                     </div>
