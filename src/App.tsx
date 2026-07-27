@@ -574,10 +574,14 @@ export default function App() {
     // Register with Supabase Auth
     const centralClient = getCentralSupabaseClient();
     if (centralClient) {
+      const email = newReg.loginInfo.email.trim();
+      const password = newReg.loginInfo.password;
+
       const { error } = await centralClient.auth.signUp({
-        email: newReg.loginInfo.email,
-        password: newReg.loginInfo.password,
+        email,
+        password
       });
+
       if (error) {
         console.error('Supabase Auth Signup Error:', error);
         alert(isMr ? `नोंदणी अयशस्वी: ${error.message}` : `Registration failed: ${error.message}`);
@@ -591,8 +595,10 @@ export default function App() {
     // Do not save the password inside the database data
     const safeReg: ShopRegistration = {
       ...newReg,
+      email: newReg.loginInfo.email.trim(),
       loginInfo: {
         ...newReg.loginInfo,
+        email: newReg.loginInfo.email.trim(),
         password: ''
       }
     };
