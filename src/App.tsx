@@ -515,6 +515,8 @@ export default function App() {
     }
 
     const centralClient = getCentralSupabaseClient();
+    let reg: ShopRegistration | undefined;
+
     if (centralClient) {
       const { data, error } = await centralClient.auth.signInWithPassword({
         email: rawEmail,
@@ -525,11 +527,35 @@ export default function App() {
         setOtpError(isMr ? `लॉगिन अयशस्वी: ${error.message}` : `Login failed: ${error.message}`);
         return;
       }
+
+      const { data: shopData, error: shopError } = await centralClient
+        .from('vastraa_central_shops')
+        .select('data')
+        .eq('data->>email', trimmedEmail)
+        .single();
+
+      if (shopData && !shopError) {
+        reg = shopData.data as ShopRegistration;
+      } else {
+        // Fallback just in case they were registered before we added root email
+        const { data: oldShopData } = await centralClient
+          .from('vastraa_central_shops')
+          .select('data')
+          .eq('data->loginInfo->>email', trimmedEmail)
+          .single();
+          
+        if (oldShopData) {
+          reg = oldShopData.data as ShopRegistration;
+        }
+      }
     }
 
-    const reg = registrations.find(r => 
-      r.loginInfo.email.toLowerCase() === trimmedEmail
-    );
+    if (!reg) {
+      reg = registrations.find(r => 
+        (r.email && r.email.toLowerCase() === trimmedEmail) || 
+        (r.loginInfo && r.loginInfo.email && r.loginInfo.email.toLowerCase() === trimmedEmail)
+      );
+    }
 
     if (reg) {
       if (reg.subscription.status === 'Active') {
